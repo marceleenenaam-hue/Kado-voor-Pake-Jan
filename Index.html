@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Engels Leren Quiz voor Pake Jan & Oma Inge</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; background: #f7f9fc; color:#333;}
+  h1 { text-align: center; color: #114b8a; }
+  #quiz-container { max-width: 480px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 15px #ccc;}
+  #question { font-weight: bold; font-size: 1.2rem; margin-bottom: 15px;}
+  .option { background: #e0e7f9; border-radius: 6px; margin: 6px 0; padding: 10px; cursor: pointer; user-select: none;}
+  .option:hover { background: #c7d1f9; }
+  #score { margin-top: 15px; font-size: 1rem; }
+  #progress-bar { background: #ddd; border-radius: 12px; overflow: hidden; height: 15px; margin-top: 20px;}
+  #progress { background: #4572e8; width: 0%; height: 100%; transition: width 0.3s;}
+  #modeToggle { margin-bottom: 20px; cursor: pointer; color:#114b8a; text-decoration: underline; }
+  #playSoundBtn { margin-left: 10px; cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>Engels Leren Quiz voor Pake Jan & Oma Inge</h1>
+
+<div id="quiz-container">
+  <div id="modeToggle">Wissel van modus (Engels → Nederlands / Nederlands → Engels)</div>
+  <div id="question"></div>
+  <button id="playSoundBtn" title="Speel uitspraak af">🔈</button>
+  <div id="options"></div>
+  <div id="score"></div>
+  <div id="progress-bar"><div id="progress"></div></div>
+</div>
+
+<script>
+// Woordenlijst: Engels -> Nederlands
+const woorden = [
+  { eng: "apple", nl: "appel" },
+  { eng: "house", nl: "huis" },
+  { eng: "car", nl: "auto" },
+  { eng: "book", nl: "boek" },
+  { eng: "water", nl: "water" },
+  { eng: "food", nl: "eten" },
+  { eng: "friend", nl: "vriend" },
+  { eng: "phone", nl: "telefoon" },
+  { eng: "family", nl: "familie" },
+  { eng: "city", nl: "stad" },
+  // Je kunt deze lijst uitbreiden tot 150+ woorden
+];
+
+// Instellingen
+let mode = "Eng→Nl"; // Of "Nl→Eng"
+let currentQuestionIndex = 0;
+let score = 0;
+
+const questionEl = document.getElementById("question");
+const optionsEl = document.getElementById("options");
+const scoreEl = document.getElementById("score");
+const progressBarEl = document.getElementById("progress");
+const playSoundBtn = document.getElementById("playSoundBtn");
+const modeToggle = document.getElementById("modeToggle");
+
+// Kies willekeurig vier opties (inclusief correcte)
+function getOptions(correctIndex) {
+  let options = [woorden[correctIndex]];
+  while (options.length < 4) {
+    const randIndex = Math.floor(Math.random() * woorden.length);
+    const candidate = woorden[randIndex];
+    // Vermijd duplicaten
+    if (!options.includes(candidate)) options.push(candidate);
+  }
+  // Schud opties
+  for (let i = options.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [options[i], options[j]] = [options[j], options[i]];
+  }
+  return options;
+}
+
+// Toon een vraag en de opties
+function showQuestion() {
+  const word = woorden[currentQuestionIndex];
+  let vraagTekst;
+  if (mode === "Eng→Nl") {
+    vraagTekst = `Wat betekent het Engelse woord: [translate:${word.eng}]?`;
+  } else {
+    vraagTekst = `Wat is het Engelse woord voor: [translate:${word.nl}]?`;
+  }
+  questionEl.innerHTML = vraagTekst;
+
+  const options = getOptions(currentQuestionIndex);
+  optionsEl.innerHTML = "";
+  options.forEach(opt => {
+    const btn = document.createElement("div");
+    btn.textContent = (mode === "Eng→Nl") ? opt.nl : opt.eng;
+    btn.className = "option";
+    btn.onclick = () => checkAnswer(opt);
+    optionsEl.appendChild(btn);
+  });
+
+  updateProgress();
+  updateScore();
+}
+
+// Controleer het antwoord
+function checkAnswer(selected) {
+  const correctWord = woorden[currentQuestionIndex];
+  let juist = false;
+  if ((mode === "Eng→Nl" && selected.nl === correctWord.nl) ||
+      (mode === "Nl→Eng" && selected.eng === correctWord.eng)) {
+    score++;
+    juist = true;
+  }
+  alert(juist ? "Goed zo!" : `Fout, het juiste antwoord is: ${(mode === "Eng→Nl") ? correctWord.nl : correctWord.eng}`);
+
+  currentQuestionIndex++;
+  if (currentQuestionIndex >= woorden.length) {
+    alert(`Einde quiz! Je score is ${score} van ${woorden.length}.`);
+    currentQuestionIndex = 0;
+    score = 0;
+  }
+  showQuestion();
+}
+
+// Score en voortgang bijwerken
+function updateScore() {
+  scoreEl.textContent = `Score: ${score} / ${woorden.length}`;
+}
+
+function updateProgress() {
+  const progressPercent = ((currentQuestionIndex) / woorden.length) * 100;
+  progressBarEl.style.width = progressPercent + "%";
+}
+
+// Wissel tussen quizmodi
+modeToggle.onclick = () => {
+  mode = (mode === "Eng→Nl") ? "Nl→Eng" : "Eng→Nl";
+  currentQuestionIndex = 0;
+  score = 0;
+  showQuestion();
+}
+
+// Speel Engelse uitspraak af met Web Speech API
+playSoundBtn.onclick = () => {
+  const synth = window.speechSynthesis;
+  let textToSpeak = (mode === "Eng→Nl") ? woorden[currentQuestionIndex].eng : woorden[currentQuestionIndex].eng;
+  if (!synth) {
+    alert("Spraaksynthetisatie wordt niet ondersteund door deze browser.");
+    return;
+  }
+  const utterance = new SpeechSynthesisUtterance(textToSpeak);
+  utterance.lang = "en-US";
+  synth.speak(utterance);
+}
+
+// Start quiz
+showQuestion();
+</script>
+</body>
+</html>
